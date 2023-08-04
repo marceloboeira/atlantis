@@ -23,7 +23,7 @@ func TestGenerateRCFile_WritesFile(t *testing.T) {
 	Ok(t, err)
 
 	expContents := `credentials "hostname" {
-  token = "token"
+	token = "token"
 }`
 	actContents, err := os.ReadFile(filepath.Join(tmp, ".terraformrc"))
 	Ok(t, err)
@@ -53,7 +53,7 @@ func TestGenerateRCFile_NoErrIfContentsSame(t *testing.T) {
 
 	rcFile := filepath.Join(tmp, ".terraformrc")
 	contents := `credentials "app.terraform.io" {
-  token = "token"
+	token = "token"
 }`
 	err := os.WriteFile(rcFile, []byte(contents), 0600)
 	Ok(t, err)

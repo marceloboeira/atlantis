@@ -594,6 +594,23 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		pullReqStatusFetcher,
 	)
 
+	applyCommandRunner := events.NewPlanCommandRunner(
+		vcsClient,
+		userConfig.DisableApplyAll,
+		applyLockingClient,
+		commitStatusUpdater,
+		projectCommandBuilder,
+		projectOutputWrapper,
+		autoMerger,
+		pullUpdater,
+		dbUpdater,
+		boltdb,
+		userConfig.ParallelPoolSize,
+		userConfig.SilenceNoProjects,
+		userConfig.SilenceVCSStatusNoProjects,
+		pullReqStatusFetcher,
+	)
+
 	approvePoliciesCommandRunner := events.NewApprovePoliciesCommandRunner(
 		commitStatusUpdater,
 		projectCommandBuilder,
@@ -621,6 +638,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	commentCommandRunnerByCmd := map[models.CommandName]events.CommentCommandRunner{
 		models.PlanCommand:            planCommandRunner,
 		models.ApplyCommand:           applyCommandRunner,
+		models.ImportCommand:          importCommandRunner,
 		models.ApprovePoliciesCommand: approvePoliciesCommandRunner,
 		models.UnlockCommand:          unlockCommandRunner,
 		models.VersionCommand:         versionCommandRunner,

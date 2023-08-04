@@ -388,7 +388,6 @@ func (e *VCSEventsController) handleGitlabPost(w http.ResponseWriter, r *http.Re
 	default:
 		e.respond(w, logging.Debug, http.StatusOK, "Ignoring unsupported event")
 	}
-
 }
 
 // HandleGitlabCommentEvent handles comment events from GitLab where Atlantis

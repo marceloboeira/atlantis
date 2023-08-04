@@ -674,6 +674,8 @@ const (
 	AutoplanCommand
 	// VersionCommand is a command to run terraform version.
 	VersionCommand
+	// Import is a command to run terraform import
+	ImportCommand
 	// Adding more? Don't forget to update String() below
 )
 
@@ -706,6 +708,8 @@ func (c CommandName) String() string {
 		return "approve_policies"
 	case VersionCommand:
 		return "version"
+	case ImportCommand:
+		return "import"
 	}
 	return ""
 }

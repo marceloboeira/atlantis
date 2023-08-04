@@ -50,6 +50,16 @@ const (
 // and pasting GitHub comments.
 var multiLineRegex = regexp.MustCompile(`.*\r?\n[^\r\n]+`)
 
+// supportedCommentCommands is the list of supported commands to execute when parsing a comment
+var supportedCommentCommands = []string{
+	models.PlanCommand.String(),
+	models.ApplyCommand.String(),
+	models.ImportCommand.String(),
+	models.UnlockCommand.String(),
+	models.ApprovePoliciesCommand.String(),
+	models.VersionCommand.String(),
+}
+
 //go:generate pegomock generate -m --use-experimental-model-gen --package mocks -o mocks/mock_comment_parsing.go CommentParsing
 
 // CommentParsing handles parsing pull request comments.
@@ -169,8 +179,8 @@ func (e *CommentParser) Parse(comment string, vcsHost models.VCSHostType) Commen
 		return CommentParseResult{CommentResponse: e.HelpComment(e.ApplyDisabled)}
 	}
 
-	// Need plan, apply, unlock, approve_policies, or version at this point.
-	if !e.stringInSlice(command, []string{models.PlanCommand.String(), models.ApplyCommand.String(), models.UnlockCommand.String(), models.ApprovePoliciesCommand.String(), models.VersionCommand.String()}) {
+	// Need plan, apply, import, unlock, approve_policies, or version at this point.
+	if !e.stringInSlice(command, supportedCommentCommands) {
 		return CommentParseResult{CommentResponse: fmt.Sprintf("```\nError: unknown command %q.\nRun 'atlantis --help' for usage.\n```", command)}
 	}
 
@@ -199,6 +209,14 @@ func (e *CommentParser) Parse(comment string, vcsHost models.VCSHostType) Commen
 		flagSet.StringVarP(&dir, dirFlagLong, dirFlagShort, "", "Apply the plan for this directory, relative to root of repo, ex. 'child/dir'.")
 		flagSet.StringVarP(&project, projectFlagLong, projectFlagShort, "", fmt.Sprintf("Apply the plan for this project. Refers to the name of the project configured in %s. Cannot be used at same time as workspace or dir flags.", yaml.AtlantisYAMLFilename))
 		flagSet.BoolVarP(&autoMergeDisabled, autoMergeDisabledFlagLong, autoMergeDisabledFlagShort, false, "Disable automerge after apply.")
+		flagSet.BoolVarP(&verbose, verboseFlagLong, verboseFlagShort, false, "Append Atlantis log to comment.")
+	case models.ImportCommand.String():
+		name = models.ImportCommand
+		flagSet = pflag.NewFlagSet(models.ImportCommand.String(), pflag.ContinueOnError)
+		flagSet.SetOutput(io.Discard)
+		flagSet.StringVarP(&workspace, workspaceFlagLong, workspaceFlagShort, "", "Switch to this Terraform workspace before importing.")
+		flagSet.StringVarP(&dir, dirFlagLong, dirFlagShort, "", "Which directory to run import in relative to root of repo, ex. 'child/dir'.")
+		flagSet.StringVarP(&project, projectFlagLong, projectFlagShort, "", fmt.Sprintf("Which project to run import for. Refers to the name of the project configured in %s. Cannot be used at same time as workspace or dir flags.", yaml.AtlantisYAMLFilename))
 		flagSet.BoolVarP(&verbose, verboseFlagLong, verboseFlagShort, false, "Append Atlantis log to comment.")
 	case models.ApprovePoliciesCommand.String():
 		name = models.ApprovePoliciesCommand
@@ -376,7 +394,6 @@ func (e *CommentParser) HelpComment(applyDisabled bool) string {
 		return fmt.Sprintf("Failed to render template, this is a bug: %v", err)
 	}
 	return buf.String()
-
 }
 
 var helpCommentTemplate = "```cmake\n" +
@@ -396,11 +413,22 @@ Examples:
 
   # apply the plan for the root directory and staging workspace
   atlantis apply -d . -w staging
-{{- end }}
+	{{- end }}
+  {{- if not .ImportDisabled }}
+  # import an specific resource to the only state
+  atlantis import aws_instance.foo i-abcd1234
+
+  # import an specific resource to an specific project's state
+  atlantis import -p beta  aws_instance.foo i-abcd1234
+	{{- end }}
 
 Commands:
   plan     Runs 'terraform plan' for the changes in this pull request.
            To plan a specific project, use the -d, -w and -p flags.
+{{- if not .ImportDisabled }}
+  import   Runs 'terraform import' with the changes in this pull request.
+           To import within a specific project, use the -d, -w and -p flags.
+{{- end }}
 {{- if not .ApplyDisabled }}
   apply    Runs 'terraform apply' on all unapplied plans from this pull request.
            To only apply a specific plan, use the -d, -w and -p flags.

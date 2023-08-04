@@ -37,7 +37,7 @@ import (
 	"github.com/runatlantis/atlantis/server/logging"
 )
 
-var LogStreamingValidCmds = [...]string{"init", "plan", "apply"}
+var LogStreamingValidCmds = [...]string{"init", "plan", "apply", "import"}
 
 // Setting the buffer size to 10mb
 const BufioScannerBufferSize = 10 * 1024 * 1024
@@ -576,7 +576,7 @@ func getVersion(tfBinary string) (*version.Version, error) {
 // to generate the contents of a ~/.terraformrc file for authenticating with
 // Terraform Enterprise.
 var rcFileContents = `credentials "%s" {
-  token = %q
+token = %q
 }`
 
 type DefaultDownloader struct{}
